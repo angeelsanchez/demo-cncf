@@ -37,7 +37,7 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           REPO_FULL="${OWNER}/${REPO_NAME}"
 
-          sleep 3
+          sleep 5
 
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git" new-repo
           cd new-repo
@@ -45,8 +45,17 @@ jobs:
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
 
-          find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s/__APP_NAME__/${REPO_NAME}/g" {} \;
-          find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s/__REPO_FULL__/${REPO_FULL//\//\\/}/g" {} \;
+          echo "Replacing __APP_NAME__ with ${REPO_NAME}"
+          echo "Replacing __REPO_FULL__ with ${REPO_FULL}"
+
+          # Use | as delimiter to avoid issues with / in REPO_FULL
+          find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.html" -o -name "*.json" \) | while read file; do
+            sed -i "s|__APP_NAME__|${REPO_NAME}|g" "$file"
+            sed -i "s|__REPO_FULL__|${REPO_FULL}|g" "$file"
+          done
+
+          echo "Files after replacement:"
+          cat catalog-info.yaml | head -20
 
           if git diff --quiet; then
             echo "No changes to commit"
@@ -54,6 +63,7 @@ jobs:
             git add -A
             git commit -m "chore: initialize from template with name ${REPO_NAME}"
             git push
+            echo "Changes committed and pushed"
           fi
 
       - name: Register ArgoCD Application
@@ -70,28 +80,30 @@ jobs:
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
 
+          mkdir -p argocd-apps
+
           cat > argocd-apps/${REPO_NAME}.yaml << EOF
-          apiVersion: argoproj.io/v1alpha1
-          kind: Application
-          metadata:
-            name: ${REPO_NAME}
-            namespace: argocd
-          spec:
-            project: default
-            source:
-              repoURL: https://github.com/${REPO_FULL}.git
-              targetRevision: HEAD
-              path: k8s
-            destination:
-              server: https://kubernetes.default.svc
-              namespace: demo-apps
-            syncPolicy:
-              automated:
-                prune: true
-                selfHeal: true
-              syncOptions:
-                - CreateNamespace=true
-          EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${REPO_NAME}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/${REPO_FULL}.git
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+EOF
 
           git add argocd-apps/${REPO_NAME}.yaml
           git commit -m "feat: add ArgoCD application for ${REPO_NAME}"
