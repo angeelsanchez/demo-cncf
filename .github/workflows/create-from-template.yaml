@@ -56,6 +56,47 @@ jobs:
             git push
           fi
 
+      - name: Register ArgoCD Application
+        env:
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          REPO_NAME="${{ inputs.repo_name }}"
+          OWNER="${{ github.repository_owner }}"
+          REPO_FULL="${OWNER}/${REPO_NAME}"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" parent-repo
+          cd parent-repo
+
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+
+          cat > argocd-apps/${REPO_NAME}.yaml << EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: ${REPO_NAME}
+            namespace: argocd
+          spec:
+            project: default
+            source:
+              repoURL: https://github.com/${REPO_FULL}.git
+              targetRevision: HEAD
+              path: k8s
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: demo-apps
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+          EOF
+
+          git add argocd-apps/${REPO_NAME}.yaml
+          git commit -m "feat: add ArgoCD application for ${REPO_NAME}"
+          git push
+
       - name: Trigger build workflow
         env:
           GH_TOKEN: ${{ secrets.REPO_TOKEN }}
