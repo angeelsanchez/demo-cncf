@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  description: Landing page for ${{ values.eventTitle }}
+  annotations:
+    github.com/project-slug: ${{ values.owner }}/${{ values.repo }}
+    backstage.io/techdocs-ref: dir:.
+    argocd/app-name: ${{ values.name }}
+    argocd/app-namespace: argocd
+    backstage.io/kubernetes-id: ${{ values.name }}
+    backstage.io/kubernetes-namespace: demo-apps
+    backstage.io/kubernetes-label-selector: app=${{ values.name }}
+  tags:
+    - landing
+    - kubernetes
+    - event
+spec:
+  type: website
+  lifecycle: production
+  owner: guests

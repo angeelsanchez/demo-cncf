@@ -1,0 +1,8 @@
+site_name: ${{ values.name }}
+site_description: Documentation for ${{ values.eventTitle }}
+
+nav:
+  - Home: index.md
+
+plugins:
+  - techdocs-core
