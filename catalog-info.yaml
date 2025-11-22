@@ -9,6 +9,7 @@ metadata:
     argocd/app-namespace: argocd
     backstage.io/kubernetes-id: __APP_NAME__
     backstage.io/kubernetes-namespace: demo-apps
+    backstage.io/techdocs-ref: dir:.
   tags:
     - landing
     - kubernetes
