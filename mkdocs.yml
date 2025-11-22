@@ -1,5 +1,5 @@
-site_name: ${{ values.name }}
-site_description: Documentation for ${{ values.eventTitle }}
+site_name: __APP_NAME__
+site_description: Documentation for Cloud Native Landing Page
 
 nav:
   - Home: index.md
