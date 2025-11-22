@@ -1,0 +1,36 @@
+name: Create Repo from Template
+
+on:
+  repository_dispatch:
+    types: [create-repo]
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create repo from template
+        env:
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          REPO_NAME="${{ github.event.client_payload.repo_name }}"
+          echo "Creating repo: $REPO_NAME"
+
+          gh api repos/${{ github.repository }}/generate \
+            -X POST \
+            -f owner=${{ github.repository_owner }} \
+            -f name="$REPO_NAME" \
+            -f description="Landing page for Cloud Native Latam Summit" \
+            -F private=false \
+            -F include_all_branches=false
+
+          echo "Repo created: https://github.com/${{ github.repository_owner }}/$REPO_NAME"
+
+      - name: Trigger build workflow
+        env:
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          REPO_NAME="${{ github.event.client_payload.repo_name }}"
+          sleep 5
+          gh api repos/${{ github.repository_owner }}/$REPO_NAME/dispatches \
+            -X POST \
+            -f event_type=build || true
