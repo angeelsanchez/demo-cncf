@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ "${{ github.repository }}" }}
 
 jobs:
   build-push:
@@ -19,12 +18,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup repo
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          REPO_FULL="$GITHUB_REPOSITORY"
+
+          if grep -q "__APP_NAME__" k8s/deployment.yaml 2>/dev/null; then
+            echo "Replacing placeholders..."
+            find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec sed -i "s|__APP_NAME__|${REPO_NAME}|g" {} \;
+            find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec sed -i "s|__REPO_FULL__|${REPO_FULL}|g" {} \;
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+            git add -A
+            git commit -m "chore: configure app for ${REPO_NAME}" || true
+            git push || true
+          fi
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ "${{ env.REGISTRY }}" }}
-          username: ${{ "${{ github.actor }}" }}
-          password: ${{ "${{ secrets.GITHUB_TOKEN }}" }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push
         uses: docker/build-push-action@v5
@@ -32,14 +47,14 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" }}
-            ${{ "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" }}
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
 
-      - name: Update Kubernetes manifests
+      - name: Update deployment image
         run: |
-          sed -i "s|image:.*|image: ${{ "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" }}|g" k8s/deployment.yaml
+          sed -i "s|image:.*|image: ghcr.io/${{ github.repository }}:${{ github.sha }}|g" k8s/deployment.yaml
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add k8s/deployment.yaml
-          git diff --staged --quiet || git commit -m "chore: update image to ${{ "${{ github.sha }}" }}"
-          git push
+          git diff --staged --quiet || git commit -m "chore: update image to ${{ github.sha }}"
+          git push || true

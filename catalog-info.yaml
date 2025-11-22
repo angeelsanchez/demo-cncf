@@ -1,16 +1,14 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: ${{ values.name }}
-  description: Landing page for ${{ values.eventTitle }}
+  name: __APP_NAME__
+  description: Landing page for Cloud Native Latam Summit
   annotations:
-    github.com/project-slug: ${{ values.owner }}/${{ values.repo }}
-    backstage.io/techdocs-ref: dir:.
-    argocd/app-name: ${{ values.name }}
+    github.com/project-slug: __REPO_FULL__
+    argocd/app-name: __APP_NAME__
     argocd/app-namespace: argocd
-    backstage.io/kubernetes-id: ${{ values.name }}
+    backstage.io/kubernetes-id: __APP_NAME__
     backstage.io/kubernetes-namespace: demo-apps
-    backstage.io/kubernetes-label-selector: app=${{ values.name }}
   tags:
     - landing
     - kubernetes
