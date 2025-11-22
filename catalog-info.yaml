@@ -7,13 +7,24 @@ metadata:
     github.com/project-slug: __REPO_FULL__
     argocd/app-name: __APP_NAME__
     argocd/app-namespace: argocd
+    argocd/instance-name: main
     backstage.io/kubernetes-id: __APP_NAME__
     backstage.io/kubernetes-namespace: demo-apps
+    backstage.io/kubernetes-label-selector: app=__APP_NAME__
     backstage.io/techdocs-ref: dir:.
+    quay.io/repository-slug: __REPO_FULL__
+  links:
+    - url: https://github.com/__REPO_FULL__
+      title: GitHub Repository
+      icon: github
+    - url: https://github.com/__REPO_FULL__/actions
+      title: GitHub Actions
+      icon: dashboard
   tags:
     - landing
     - kubernetes
     - event
+    - gitops
 spec:
   type: website
   lifecycle: production
