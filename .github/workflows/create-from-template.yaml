@@ -29,6 +29,33 @@ jobs:
 
           echo "Repo created: https://github.com/${{ github.repository_owner }}/$REPO_NAME"
 
+      - name: Clone and update placeholders
+        env:
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          REPO_NAME="${{ inputs.repo_name }}"
+          OWNER="${{ github.repository_owner }}"
+          REPO_FULL="${OWNER}/${REPO_NAME}"
+
+          sleep 3
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git" new-repo
+          cd new-repo
+
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+
+          find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s/__APP_NAME__/${REPO_NAME}/g" {} \;
+          find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.html" -o -name "*.json" \) -exec sed -i "s/__REPO_FULL__/${REPO_FULL//\//\\/}/g" {} \;
+
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add -A
+            git commit -m "chore: initialize from template with name ${REPO_NAME}"
+            git push
+          fi
+
       - name: Trigger build workflow
         env:
           GH_TOKEN: ${{ secrets.REPO_TOKEN }}
